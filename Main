@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>President Card Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: 
+                radial-gradient(ellipse at center, #1a1a1a 0%, #000000 70%),
+                repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255,255,255,0.02) 2px, rgba(255,255,255,0.02) 4px);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            touch-action: manipulation;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, rgba(80, 80, 80, 0.9), rgba(60, 60, 60, 0.9));
+            backdrop-filter: blur(10px);
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            z-index: 50;
+            position: relative;
+        }
+
+        .header-left {
+            color: #DC143C;
+            font-weight: 600;
+        }
+
+        .header-right {
+            color: white;
+            font-weight: 600;
+        }
+
+        .game-area {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #DC143C 0%, #B22222 50%, #8B0000 100%);
+        }
+
+        .table-surface {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            position: relative;
+        }
+
+        /* Bot 2 cards - FIXED at TOP of screen */
+        .bot2-cards {
+            position: fixed;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        /* Bot 1 cards - LEFT side */
+        .bot1-cards {
+            position: fixed;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 15;
+        }
+
+        /* Bot 3 cards - RIGHT side */
+        .bot3-cards {
+            position: fixed;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 15;
+        }
+
+        .opponent-card {
+            width: 35px;
+            height: 50px;
+            background: linear-gradient(135deg, #333333, #1a1a1a);
+            border-radius: 6px;
+            border: 2px solid #000000;
+            position: relative;
+            box-shadow: 
+                2px 2px 8px rgba(0, 0, 0, 0.8),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .opponent-card::before {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            right: 3px;
+            bottom: 3px;
+            background: repeating-linear-gradient(
+                45deg,
+                #2a2a2a,
+                #2a2a2a 3px,
+                #404040 3px,
+                #404040 6px
+            );
+            border-radius: 3px;
+            opacity: 0.8;
+        }
+
+        /* Bot 2 cards (top) - fanned horizontally */
+        .bot2-cards .opponent-card {
+            margin-left: -20px;
+        }
+
+        .bot2-cards .opponent-card:first-child {
+            margin-left: 0;
+        }
+
+        .bot2-cards .opponent-card:hover {
+            transform: translateY(-8px);
+            z-index: 110;
+            box-shadow: 
+                2px 8px 12px rgba(0, 0, 0, 0.9),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        /* Bot 1 cards (left) - fanned vertically */
+        .bot1-cards .opponent-card {
+            margin-top: -30px;
+            transform: rotate(90deg);
+        }
+
+        .bot1-cards .opponent-card:first-child {
+            margin-top: 0;
+        }
+
+        .bot1-cards .opponent-card:hover {
+            transform: rotate(90deg) translateX(-8px);
+            z-index: 25;
+        }
+
+        /* Bot 3 cards (right) - fanned vertically */
+        .bot3-cards .opponent-card {
+            margin-top: -30px;
+            transform: rotate(-90deg);
+        }
+
+        .bot3-cards .opponent-card:first-child {
+            margin-top: 0;
+        }
+
+        .bot3-cards .opponent-card:hover {
+            transform: rotate(-90deg) translateX(-8px);
+            z-index: 25;
+        }
+
+        /* Animated card for bot plays */
+        .animated-card {
+            position: fixed;
+            width: 50px;
+            height: 70px;
+            background: linear-gradient(145deg, #ffffff, #f0f0f0);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 14px;
+            font-weight: bold;
+            color: black;
+            border: 2px solid #000000;
+            box-shadow: 
+                0 4px 12px rgba(0, 0, 0, 0.6),
+                inset 0 1px 0 rgba(255, 255, 255, 0.8);
+            padding: 4px 2px;
+            z-index: 999;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .animated-card::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 2px;
+            bottom: 2px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 6px;
+        }
+
+        .animated-card.red {
+            color: #DC143C;
+        }
+
+        /* Center play area */
+        .center-play {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 20;
+            min-width: 200px;
+        }
+
+        /* Layered card pile - each player gets their own layer */
+        .played-cards {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 15px;
+            min-height: 120px;
+            width: 200px;
+            margin: 0 auto 15px auto;
+        }
+
+        .play-group {
+            position: absolute;
+            display: flex;
+            gap: 4px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Each play gets positioned to create a layered effect facing different directions */
+        .play-group.from-player0 {
+            transform: translateY(0px) rotate(0deg);
+        }
+
+        .play-group.from-player1 {
+            transform: translateY(-15px) translateX(-15px) rotate(-5deg);
+        }
+
+        .play-group.from-player2 {
+            transform: translateY(-30px) translateX(0px) rotate(0deg);
+        }
+
+        .play-group.from-player3 {
+            transform: translateY(-15px) translateX(15px) rotate(5deg);
+        }
+
+        /* Stack layers by recency */
+        .play-group:nth-child(1) { z-index: 1; }
+        .play-group:nth-child(2) { z-index: 2; }
+        .play-group:nth-child(3) { z-index: 3; }
+        .play-group:nth-child(4) { z-index: 4; }
+        .play-group:nth-child(5) { z-index: 5; }
+
+        .played-card {
+            width: 50px;
+            height: 70px;
+            background: linear-gradient(145deg, #ffffff, #f0f0f0);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 14px;
+            font-weight: bold;
+            color: black;
+            border: 2px solid #000000;
+            box-shadow: 
+                0 4px 12px rgba(0, 0, 0, 0.6),
+                inset 0 1px 0 rgba(255, 255, 255, 0.8);
+            padding: 4px 2px;
+            position: relative;
+            transition: transform 0.3s ease;
+            cursor: pointer;
+        }
+
+        .played-card:hover {
+            transform: scale(1.15) translateZ(10px);
+            z-index: 100;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.8);
+        }
+
+        .played-card.red {
+            color: #DC143C;
+        }
+
+        .played-card::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 2px;
+            bottom: 2px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 6px;
+        }
+
+        .card-rank-top {
+            font-size: 10px;
+            align-self: flex-start;
+            line-height: 1;
+        }
+
+        .card-suit-center {
+            font-size: 20px;
+            line-height: 1;
+        }
+
+        .card-rank-bottom {
+            font-size: 10px;
+            align-self: flex-end;
+            transform: rotate(180deg);
+            line-height: 1;
+        }
+
+        /* Bottom control area */
+        .bottom-area {
+            background: linear-gradient(to top, 
+                rgba(128, 128, 128, 0.95) 0%, 
+                rgba(112, 112, 112, 0.95) 50%, 
+                rgba(96, 96, 96, 0.95) 100%);
+            backdrop-filter: blur(15px);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 15px 20px 20px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.5);
+            position: relative;
+            z-index: 30;
+        }
+
+        /* Single status display */
+        .status-display {
+            text-align: center;
+            font-size: 16px;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, rgba(80, 80, 80, 0.95), rgba(60, 60, 60, 0.95));
+            padding: 12px 24px;
+            border-radius: 25px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(15px);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 90px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .control-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .control-btn:hover::before {
+            left: 100%;
+        }
+
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn-play {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .btn-pass {
+            background: linear-gradient(135deg, #555555, #333333);
+            color: white;
+        }
+
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .control-btn:disabled::before {
+            display: none;
+        }
+
+        /* Hand display */
+        .hand-container {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .hand-area {
+            display: flex;
+            gap: 6px;
+            padding: 0 20px;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .hand-area::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .hand-area::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        .hand-area::-webkit-scrollbar-thumb {
+            background: rgba(80, 80, 80, 0.6);
+            border-radius: 3px;
+        }
+
+        .hand-area::-webkit-scrollbar-thumb:hover {
+            background: rgba(80, 80, 80, 0.8);
+        }
+
+        .hand-card {
+            width: 50px;
+            height: 70px;
+            background: linear-gradient(145deg, #ffffff, #f0f0f0);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 14px;
+            font-weight: bold;
+            color: black;
+            border: 2px solid #000000;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            flex-shrink: 0;
+            box-shadow: 
+                0 3px 8px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.8);
+            padding: 4px 2px;
+        }
+
+        .hand-card.red {
+            color: #DC143C;
+        }
+
+        .hand-card::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 2px;
+            bottom: 2px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 6px;
+        }
+
+        .hand-card.selected {
+            border-color: #FFD700;
+            transform: translateY(-15px);
+            box-shadow: 
+                0 12px 25px rgba(255, 215, 0, 0.5),
+                0 6px 15px rgba(0, 0, 0, 0.6),
+                inset 0 1px 0 rgba(255, 255, 255, 0.8);
+            z-index: 10;
+        }
+
+        .hand-card:hover:not(.selected) {
+            transform: translateY(-5px);
+            box-shadow: 
+                0 6px 15px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        }
+
+        @media (max-width: 768px) {
+            .bot2-cards {
+                top: 60px;
+            }
+
+            .bot1-cards {
+                left: 15px;
+            }
+
+            .bot3-cards {
+                right: 15px;
+            }
+
+            .hand-card, .played-card, .animated-card {
+                width: 45px;
+                height: 63px;
+                font-size: 12px;
+            }
+
+            .opponent-card {
+                width: 30px;
+                height: 42px;
+            }
+
+            .control-btn {
+                min-width: 80px;
+                padding: 10px 16px;
+                font-size: 13px;
+            }
+
+            .hand-area {
+                padding: 0 15px;
+            }
+
+            .played-cards {
+                min-height: 100px;
+                width: 180px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .bot2-cards {
+                top: 55px;
+            }
+
+            .bot1-cards {
+                left: 10px;
+            }
+
+            .bot3-cards {
+                right: 10px;
+            }
+
+            .hand-card, .played-card, .animated-card {
+                width: 40px;
+                height: 56px;
+                font-size: 11px;
+            }
+
+            .opponent-card {
+                width: 28px;
+                height: 38px;
+            }
+
+            .card-suit-center {
+                font-size: 16px;
+            }
+
+            .control-btn {
+                min-width: 70px;
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+
+            .hand-area {
+                padding: 0 10px;
+                gap: 4px;
+            }
+
+            .bot2-cards .opponent-card {
+                margin-left: -15px;
+            }
+
+            .bot1-cards .opponent-card,
+            .bot3-cards .opponent-card {
+                margin-top: -20px;
+            }
+
+            .played-cards {
+                min-height: 80px;
+                width: 160px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">President - Classic • 6 points</div>
+        <div class="header-right">Round <span id="round-display">1</span></div>
+    </div>
+
+    <!-- Bot cards positioned OUTSIDE game-area for fixed positioning -->
+    <!-- Bot 2 at TOP of screen -->
+    <div class="bot2-cards" id="bot2-cards"></div>
+    
+    <!-- Bot 1 at LEFT -->
+    <div class="bot1-cards" id="bot1-cards"></div>
+    
+    <!-- Bot 3 at RIGHT -->
+    <div class="bot3-cards" id="bot3-cards"></div>
+
+    <div class="game-area">
+        <div class="table-surface">
+            <!-- Center play area -->
+            <div class="center-play">
+                <div class="played-cards" id="played-cards"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-area">
+        <!-- Single status display -->
+        <div class="status-display" id="status">Waiting for cards to be dealt...</div>
+        
+        <div class="controls">
+            <button class="control-btn btn-pass" id="pass-btn" disabled>PASS</button>
+            <button class="control-btn btn-play" id="play-btn" disabled>PLAY</button>
+        </div>
+
+        <div class="hand-container">
+            <div class="hand-area" id="hand-area">
+                <!-- Cards will be displayed here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class Card {
+            constructor(rank, suit) {
+                this.rank = rank;
+                this.suit = suit;
+                this.value = this.getCardValue();
+            }
+
+            getCardValue() {
+                if (this.rank === 'A') return 14;
+                if (this.rank === 'K') return 13;
+                if (this.rank === 'Q') return 12;
+                if (this.rank === 'J') return 11;
+                if (this.rank === '2') return 15;
+                return parseInt(this.rank);
+            }
+
+            toString() {
+                return this.rank + this.suit;
+            }
+
+            isRed() {
+                return this.suit === '♥' || this.suit === '♦';
+            }
+
+            getSuitSymbol() {
+                return this.suit;
+            }
+        }
+
+        class PresidentGame {
+            constructor() {
+                this.players = [
+                    { name: 'rickkent48-collab', hand: [], rank: null },
+                    { name: 'Bot 1', hand: [], rank: null },
+                    { name: 'Bot 2', hand: [], rank: null },
+                    { name: 'Bot 3', hand: [], rank: null }
+                ];
+                
+                this.reset();
+                this.setupEvents();
+                this.autoStartGame();
+            }
+
+            reset() {
+                this.currentPlayer = 0;
+                this.selectedCards = [];
+                this.lastPlay = { cards: [], player: -1, count: 0, value: 0 };
+                this.passCount = 0;
+                this.consecutivePasses = [];
+                this.round = 1;
+                this.gameStarted = false;
+                this.roundComplete = false;
+                this.rankings = [];
+                this.playHistory = [];
+                
+                this.players.forEach(player => {
+                    player.hand = [];
+                    player.rank = null;
+                });
+            }
+
+            setupEvents() {
+                document.getElementById('play-btn').onclick = () => this.playCards();
+                document.getElementById('pass-btn').onclick = () => this.pass();
+            }
+
+            autoStartGame() {
+                console.log("Auto-starting game...");
+                setTimeout(() => {
+                    this.dealCards();
+                    this.updateDisplay();
+                }, 1000);
+            }
+
+            createDeck() {
+                const suits = ['♠', '♥', '♦', '♣'];
+                const ranks = ['3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A', '2'];
+                const deck = [];
+
+                suits.forEach(suit => {
+                    ranks.forEach(rank => {
+                        deck.push(new Card(rank, suit));
+                    });
+                });
+
+                return this.shuffleDeck(deck);
+            }
+
+            shuffleDeck(deck) {
+                for (let i = deck.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [deck[i], deck[j]] = [deck[j], deck[i]];
+                }
+                return deck;
+            }
+
+            dealCards() {
+                const deck = this.createDeck();
+                console.log("Dealing cards...");
+
+                this.players.forEach(player => {
+                    player.hand = [];
+                    player.rank = null;
+                });
+
+                let cardIndex = 0;
+                for (let round = 0; round < 13; round++) {
+                    for (let player = 0; player < 4; player++) {
+                        if (deck[cardIndex]) {
+                            this.players[player].hand.push(deck[cardIndex]);
+                            cardIndex++;
+                        }
+                    }
+                }
+
+                this.players.forEach((player, index) => {
+                    player.hand.sort((a, b) => a.value - b.value);
+                });
+
+                console.log(`Cards dealt. Your hand: ${this.players[0].hand.length} cards`);
+                this.findStartingPlayer();
+            }
+
+            findStartingPlayer() {
+                console.log("Finding 3♣...");
+                
+                for (let i = 0; i < this.players.length; i++) {
+                    const player = this.players[i];
+                    const has3Clubs = player.hand.some(card => 
+                        card.rank === '3' && card.suit === '♣'
+                    );
+                    
+                    if (has3Clubs) {
+                        console.log(`${player.name} has 3♣`);
+                        
+                        this.currentPlayer = i;
+                        this.gameStarted = true;
+                        
+                        if (i === 0) {
+                            this.updateStatus("You have the 3♣! Select it to start the game.");
+                        } else {
+                            this.updateStatus(`${player.name} has the 3♣ and will start.`);
+                            setTimeout(() => this.botTurn(), 2000);
+                        }
+                        return;
+                    }
+                }
+                
+                console.log("ERROR: No 3♣ found!");
+                this.updateStatus("Error: No 3♣ found in any hand!");
+            }
+
+            selectCard(cardIndex) {
+                if (!this.gameStarted || this.currentPlayer !== 0 || this.roundComplete) {
+                    return;
+                }
+
+                const card = this.players[0].hand[cardIndex];
+                if (!card) return;
+
+                if (this.selectedCards.includes(cardIndex)) {
+                    this.selectedCards = this.selectedCards.filter(i => i !== cardIndex);
+                } else {
+                    this.selectedCards.push(cardIndex);
+                }
+
+                this.updateHandDisplay();
+                this.updateButtons();
+            }
+
+            playCards() {
+                if (this.selectedCards.length === 0) {
+                    this.updateStatus("Select cards to play first!");
+                    return;
+                }
+
+                if (!this.isValidPlay(this.selectedCards)) {
+                    this.updateStatus("Invalid play! Check the rules.");
+                    return;
+                }
+
+                const cards = this.selectedCards.map(i => this.players[0].hand[i]);
+                console.log(`Playing: ${cards.map(c => c.toString()).join(', ')}`);
+                
+                const sortedIndices = [...this.selectedCards].sort((a, b) => b - a);
+                sortedIndices.forEach(index => {
+                    this.players[0].hand.splice(index, 1);
+                });
+
+                this.makePlay(cards, 0);
+                this.selectedCards = [];
+                this.nextTurn();
+            }
+
+            isValidPlay(cardIndices) {
+                if (cardIndices.length === 0) return false;
+                
+                const cards = cardIndices.map(i => this.players[0].hand[i]);
+                const firstRank = cards[0].rank;
+                
+                if (!cards.every(card => card.rank === firstRank)) {
+                    return false;
+                }
+
+                if (this.lastPlay.count > 0 && cards.length !== this.lastPlay.count) {
+                    return false;
+                }
+
+                if (this.lastPlay.count > 0 && cards[0].value <= this.lastPlay.value) {
+                    return false;
+                }
+
+                if (this.lastPlay.count === 0) {
+                    const has3Clubs = this.players[0].hand.some(card => 
+                        card.rank === '3' && card.suit === '♣'
+                    );
+                    if (has3Clubs) {
+                        const includes3Clubs = cards.some(card => card.rank === '3' && card.suit === '♣');
+                        if (!includes3Clubs) {
+                            return false;
+                        }
+                    }
+                }
+
+                return true;
+            }
+
+            // Fixed animation from correct bot positions
+            animateCardPlay(cards, playerIndex, callback) {
+                const playedCardsContainer = document.getElementById('played-cards');
+                const containerRect = playedCardsContainer.getBoundingClientRect();
+                
+                const baseX = containerRect.left + containerRect.width / 2;
+                const baseY = containerRect.top + containerRect.height / 2;
+                
+                let startX, startY;
+                
+                // Fixed: Get the correct bot's position based on playerIndex
+                if (playerIndex === 1) { // Bot 1 (left)
+                    const bot1Cards = document.getElementById('bot1-cards');
+                    const bot1Rect = bot1Cards.getBoundingClientRect();
+                    startX = bot1Rect.left + bot1Rect.width / 2;
+                    startY = bot1Rect.top + bot1Rect.height / 2;
+                } else if (playerIndex === 2) { // Bot 2 (top)
+                    const bot2Cards = document.getElementById('bot2-cards');
+                    const bot2Rect = bot2Cards.getBoundingClientRect();
+                    startX = bot2Rect.left + bot2Rect.width / 2;
+                    startY = bot2Rect.top + bot2Rect.height / 2;
+                } else if (playerIndex === 3) { // Bot 3 (right)
+                    const bot3Cards = document.getElementById('bot3-cards');
+                    const bot3Rect = bot3Cards.getBoundingClientRect();
+                    startX = bot3Rect.left + bot3Rect.width / 2;
+                    startY = bot3Rect.top + bot3Rect.height / 2;
+                }
+
+                let animationsComplete = 0;
+                const totalAnimations = cards.length;
+
+                cards.forEach((card, index) => {
+                    const animatedCard = document.createElement('div');
+                    animatedCard.className = `animated-card ${card.isRed() ? 'red' : ''}`;
+                    animatedCard.innerHTML = `
+                        <div class="card-rank-top">${card.rank}</div>
+                        <div class="card-suit-center">${card.getSuitSymbol()}</div>
+                        <div class="card-rank-bottom">${card.rank}</div>
+                    `;
+                    
+                    animatedCard.style.left = startX - 25 + 'px';
+                    animatedCard.style.top = startY - 35 + 'px';
+                    
+                    document.body.appendChild(animatedCard);
+
+                    // Calculate final position based on player's mini-pile
+                    const playerOffset = this.getPlayerPileOffset(playerIndex);
+                    const finalX = baseX - 25 + (index * 4) + playerOffset.x;
+                    const finalY = baseY - 35 + playerOffset.y;
+
+                    setTimeout(() => {
+                        animatedCard.style.opacity = '1';
+                        animatedCard.style.transition = 'all 1.0s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+                        animatedCard.style.left = finalX + 'px';
+                        animatedCard.style.top = finalY + 'px';
+                        animatedCard.style.transform = 'rotate(' + (Math.random() * 6 - 3) + 'deg)';
+                    }, index * 150);
+
+                    setTimeout(() => {
+                        animatedCard.style.opacity = '0';
+                        animatedCard.style.transition = 'opacity 0.2s ease';
+                        
+                        setTimeout(() => {
+                            animatedCard.remove();
+                            animationsComplete++;
+                            
+                            if (animationsComplete === totalAnimations) {
+                                callback();
+                            }
+                        }, 200);
+                    }, 1000 + (index * 150));
+                });
+            }
+
+            // Get offset for each player's mini-pile position
+            getPlayerPileOffset(playerIndex) {
+                const offsets = [
+                    { x: 0, y: 0 },       // Player 0 - center bottom
+                    { x: -15, y: -15 },   // Bot 1 - left
+                    { x: 0, y: -30 },     // Bot 2 - top
+                    { x: 15, y: -15 }     // Bot 3 - right
+                ];
+                return offsets[playerIndex] || { x: 0, y: 0 };
+            }
+
+            makePlay(cards, playerIndex) {
+                this.consecutivePasses = [];
+                
+                const playCallback = () => {
+                    this.lastPlay = {
+                        cards: cards,
+                        player: playerIndex,
+                        count: cards.length,
+                        value: cards[0].value
+                    };
+
+                    this.playHistory.push({
+                        cards: cards,
+                        player: playerIndex,
+                        playerName: this.players[playerIndex].name
+                    });
+
+                    const playerName = this.players[playerIndex].name;
+                    this.updateStatus(`${playerName} played ${cards.length} ${cards[0].rank}(s)`);
+
+                    if (this.players[playerIndex].hand.length === 0) {
+                        this.playerFinished(playerIndex);
+                    }
+
+                    this.updatePlayArea();
+                };
+
+                if (playerIndex !== 0) {
+                    this.animateCardPlay(cards, playerIndex, playCallback);
+                } else {
+                    playCallback();
+                }
+            }
+
+            playerFinished(playerIndex) {
+                const ranks = ['President', 'Vice President', 'Neutral', 'Scum'];
+                const rank = ranks[this.rankings.length];
+                
+                this.players[playerIndex].rank = rank;
+                this.rankings.push(playerIndex);
+
+                this.updateStatus(`${this.players[playerIndex].name} finished as ${rank}!`);
+
+                if (this.rankings.length === 3) {
+                    const lastPlayer = this.players.findIndex(p => p.rank === null);
+                    this.players[lastPlayer].rank = 'Scum';
+                    this.rankings.push(lastPlayer);
+                    this.endRound();
+                }
+            }
+
+            pass() {
+                this.consecutivePasses.push(this.currentPlayer);
+                this.selectedCards = [];
+                
+                if (this.consecutivePasses.length >= 3) {
+                    this.clearTable();
+                } else {
+                    const remaining = 3 - this.consecutivePasses.length;
+                    this.updateStatus(`You passed. ${remaining} more consecutive passes will clear the table.`);
+                }
+                
+                this.nextTurn();
+            }
+
+            clearTable() {
+                const lastPlayingPlayer = this.lastPlay.player;
+                
+                this.lastPlay = { cards: [], player: -1, count: 0, value: 0 };
+                this.consecutivePasses = [];
+                this.playHistory = [];
+                
+                if (lastPlayingPlayer !== -1 && this.players[lastPlayingPlayer].rank === null) {
+                    this.currentPlayer = lastPlayingPlayer;
+                } else {
+                    do {
+                        this.currentPlayer = (this.currentPlayer + 1) % 4;
+                    } while (this.players[this.currentPlayer].rank !== null);
+                }
+                
+                this.updateStatus("Table cleared! " + (this.currentPlayer === 0 ? "Your turn" : `${this.players[this.currentPlayer].name}'s turn`) + " - any cards can be played.");
+                this.updatePlayArea();
+            }
+
+            nextTurn() {
+                do {
+                    this.currentPlayer = (this.currentPlayer + 1) % 4;
+                } while (this.players[this.currentPlayer].rank !== null);
+
+                if (this.currentPlayer !== 0 && this.gameStarted && !this.roundComplete) {
+                    setTimeout(() => this.botTurn(), 2000);
+                }
+                
+                this.updateDisplay();
+            }
+
+            botTurn() {
+                if (!this.gameStarted || this.roundComplete) return;
+
+                const bot = this.players[this.currentPlayer];
+                const playable = this.findBotPlayableCards(bot.hand);
+
+                if (playable.length > 0 && Math.random() > 0.3) {
+                    const cardsToPlay = playable[0];
+                    
+                    this.consecutivePasses = [];
+                    
+                    cardsToPlay.forEach(card => {
+                        const index = bot.hand.findIndex(c => 
+                            c.rank === card.rank && c.suit === card.suit
+                        );
+                        if (index !== -1) {
+                            bot.hand.splice(index, 1);
+                        }
+                    });
+
+                    this.updateOpponentCards();
+                    this.makePlay(cardsToPlay, this.currentPlayer);
+                } else {
+                    this.consecutivePasses.push(this.currentPlayer);
+                    this.updateStatus(`${bot.name} passed.`);
+                    
+                    if (this.consecutivePasses.length >= 3) {
+                        this.clearTable();
+                        return;
+                    }
+                }
+
+                setTimeout(() => this.nextTurn(), 1500);
+            }
+
+            findBotPlayableCards(hand) {
+                const combinations = [];
+                const rankGroups = {};
+
+                hand.forEach(card => {
+                    if (!rankGroups[card.rank]) {
+                        rankGroups[card.rank] = [];
+                    }
+                    rankGroups[card.rank].push(card);
+                });
+
+                Object.values(rankGroups).forEach(group => {
+                    for (let count = 1; count <= group.length; count++) {
+                        const combo = group.slice(0, count);
+                        
+                        if (this.lastPlay.count === 0 || 
+                            (combo.length === this.lastPlay.count && combo[0].value > this.lastPlay.value)) {
+                            combinations.push(combo);
+                        }
+                    }
+                });
+
+                return combinations.sort((a, b) => a[0].value - b[0].value);
+            }
+
+            endRound() {
+                this.roundComplete = true;
+                this.updateStatus("Round complete!");
+                
+                setTimeout(() => {
+                    this.round++;
+                    this.reset();
+                    this.autoStartGame();
+                }, 4000);
+            }
+
+            updateDisplay() {
+                this.updatePlayArea();
+                this.updateHandDisplay();
+                this.updateOpponentCards();
+                this.updateButtons();
+                document.getElementById('round-display').textContent = this.round;
+            }
+
+            // Display layered card pile with player-specific mini-piles
+            updatePlayArea() {
+                const playedCards = document.getElementById('played-cards');
+                
+                if (this.playHistory.length > 0) {
+                    playedCards.innerHTML = '';
+                    
+                    const recentPlays = this.playHistory.slice(-5);
+                    
+                    recentPlays.forEach((play) => {
+                        const playGroup = document.createElement('div');
+                        playGroup.className = `play-group from-player${play.player}`;
+                        
+                        play.cards.forEach(card => {
+                            const cardEl = document.createElement('div');
+                            cardEl.className = `played-card ${card.isRed() ? 'red' : ''}`;
+                            cardEl.innerHTML = `
+                                <div class="card-rank-top">${card.rank}</div>
+                                <div class="card-suit-center">${card.getSuitSymbol()}</div>
+                                <div class="card-rank-bottom">${card.rank}</div>
+                            `;
+                            cardEl.title = `${play.playerName} played ${card.toString()}`;
+                            playGroup.appendChild(cardEl);
+                        });
+                        
+                        playedCards.appendChild(playGroup);
+                    });
+                } else {
+                    playedCards.innerHTML = '';
+                }
+            }
+
+            updateHandDisplay() {
+                const handArea = document.getElementById('hand-area');
+                handArea.innerHTML = '';
+                
+                this.players[0].hand.forEach((card, index) => {
+                    const cardEl = document.createElement('div');
+                    cardEl.className = `hand-card ${card.isRed() ? 'red' : ''}`;
+                    if (this.selectedCards.includes(index)) {
+                        cardEl.classList.add('selected');
+                    }
+                    
+                    cardEl.innerHTML = `
+                        <div class="card-rank-top">${card.rank}</div>
+                        <div class="card-suit-center">${card.getSuitSymbol()}</div>
+                        <div class="card-rank-bottom">${card.rank}</div>
+                    `;
+                    
+                    cardEl.onclick = () => this.selectCard(index);
+                    handArea.appendChild(cardEl);
+                });
+            }
+
+            updateOpponentCards() {
+                // Bot 2 at top
+                const bot2Cards = document.getElementById('bot2-cards');
+                bot2Cards.innerHTML = '';
+                for (let j = 0; j < this.players[2].hand.length; j++) {
+                    const cardEl = document.createElement('div');
+                    cardEl.className = 'opponent-card';
+                    bot2Cards.appendChild(cardEl);
+                }
+
+                // Bot 1 at left
+                const bot1Cards = document.getElementById('bot1-cards');
+                bot1Cards.innerHTML = '';
+                for (let j = 0; j < this.players[1].hand.length; j++) {
+                    const cardEl = document.createElement('div');
+                    cardEl.className = 'opponent-card';
+                    bot1Cards.appendChild(cardEl);
+                }
+
+                // Bot 3 at right
+                const bot3Cards = document.getElementById('bot3-cards');
+                bot3Cards.innerHTML = '';
+                for (let j = 0; j < this.players[3].hand.length; j++) {
+                    const cardEl = document.createElement('div');
+                    cardEl.className = 'opponent-card';
+                    bot3Cards.appendChild(cardEl);
+                }
+            }
+
+            updateButtons() {
+                const playBtn = document.getElementById('play-btn');
+                const passBtn = document.getElementById('pass-btn');
+                
+                const isPlayerTurn = this.currentPlayer === 0 && this.gameStarted && !this.roundComplete;
+                
+                passBtn.disabled = !isPlayerTurn;
+                playBtn.disabled = !isPlayerTurn || this.selectedCards.length === 0 || !this.isValidPlay(this.selectedCards);
+            }
+
+            updateStatus(message) {
+                document.getElementById('status').textContent = message;
+                console.log("Status:", message);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("DOM loaded, creating game...");
+            window.game = new PresidentGame();
+        });
+    </script>
+</body>
+</html>
